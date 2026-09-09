@@ -8,39 +8,110 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#17181c;
-    --surface:#1f2024;
-    --surface-2:#26272c;
-    --pearl:#f1eee6;
-    --pearl-dim:#c9c6bd;
-    --silver:#8d9195;
-    --hairline:#3a3b40;
-    --brass:#c99a4b;
-    --brass-dim:#8a723f;
-    --wine:#b1584f;
-    --teal:#4f9088;
-    --radius:2px;
+    --ink:#07111f;
+    --surface:rgba(11,25,42,.48);
+    --surface-2:rgba(18,39,63,.42);
+    --pearl:#f7fbff;
+    --pearl-dim:#d4e3ef;
+    --silver:#a9bfd0;
+    --hairline:rgba(198,225,242,.18);
+    --brass:#ffd166;
+    --brass-dim:#d7a83d;
+    --wine:#ff8f8f;
+    --teal:#67e8d0;
+    --violet:#9b8cff;
+    --cyan:#63d7ff;
+    --radius:14px;
+    --glass-radius:24px;
+    --glass-bg:rgba(13,31,52,.38);
+    --glass-bg-strong:rgba(10,25,43,.62);
+    --glass-border:rgba(226,246,255,.22);
+    --glass-highlight:rgba(255,255,255,.42);
   }
 
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--ink);
+    background:#07111f;
     color:var(--pearl);
     font-family:'Work Sans', sans-serif;
     font-size:15px;
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
+    position:relative;
   }
   @media (prefers-reduced-motion: reduce){
     *{animation:none !important; transition:none !important;}
   }
 
+  /* Hyderabad Charminar photo background + cinematic glass effect */
+  .bg-scene{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    overflow:hidden;
+    background:#07111f;
+  }
+  .bg-photo{
+    position:absolute;
+    inset:-3%;
+    background-image:url('https://commons.wikimedia.org/wiki/Special:Redirect/file/Charminar%20of%20Hyderabad%20Telangana.jpg');
+    background-size:cover;
+    background-position:center 42%;
+    filter:saturate(1.12) contrast(1.05) brightness(.72);
+    transform:scale(1.03);
+  }
+  .bg-vignette{
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(180deg,rgba(3,12,24,.72) 0%,rgba(5,18,32,.38) 38%,rgba(3,12,23,.78) 100%),
+      radial-gradient(circle at 50% 28%,rgba(95,220,255,.18),transparent 42%),
+      radial-gradient(circle at 80% 75%,rgba(155,140,255,.18),transparent 35%);
+    backdrop-filter:saturate(110%);
+  }
+  .bg-glow{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(80px);
+    opacity:.42;
+    pointer-events:none;
+  }
+  .bg-glow.g1{width:360px;height:360px;top:-100px;left:-100px;background:#5ee7ff;}
+  .bg-glow.g2{width:300px;height:300px;top:20px;right:-100px;background:#8f7cff;}
+  .bg-glow.g3{width:340px;height:340px;bottom:-140px;left:35%;background:#ffd166;opacity:.22;}
+
   .wrap{
     max-width:640px;
     margin:0 auto;
     padding:32px 20px 80px;
+    position:relative;
+    z-index:1;
+  }
+
+  /* Glass panel base */
+  .glass{
+    background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 38%,rgba(7,20,35,.34));
+    -webkit-backdrop-filter:blur(24px) saturate(165%);
+    backdrop-filter:blur(24px) saturate(165%);
+    border:1px solid var(--glass-border);
+    border-radius:var(--glass-radius);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.42) inset,
+      0 -1px 0 rgba(0,0,0,.18) inset,
+      0 28px 70px -24px rgba(0,0,0,.78),
+      0 8px 24px rgba(0,0,0,.22);
+    position:relative;
+    overflow:hidden;
+  }
+  .glass::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(115deg,rgba(255,255,255,.13),transparent 28%,transparent 72%,rgba(99,215,255,.05));
+    opacity:.9;
   }
 
   /* Header */
@@ -62,6 +133,7 @@
     margin:0;
     letter-spacing:-0.01em;
     color:var(--pearl);
+    text-shadow:0 2px 18px rgba(99,215,255,.18);
   }
   .dates{
     font-size:13px;
@@ -84,8 +156,7 @@
   /* Setup panel */
   .setup{
     margin-top:28px;
-    border:1px solid var(--hairline);
-    padding:22px 20px;
+    padding:24px 22px;
   }
   .setup h2{
     font-family:'Fraunces', serif;
@@ -117,13 +188,16 @@
   }
   input[type=text], input[type=number], select{
     width:100%;
-    background:var(--surface);
-    border:1px solid var(--hairline);
+    background:rgba(3,14,26,.38);
+    border:1px solid rgba(226,246,255,.22);
+    box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 8px 20px rgba(0,0,0,.12);
     color:var(--pearl);
     padding:10px 11px;
     font-family:'Work Sans', sans-serif;
     font-size:14px;
-    border-radius:var(--radius);
+    border-radius:10px;
+    -webkit-backdrop-filter:blur(6px);
+    backdrop-filter:blur(6px);
   }
   input:focus, select:focus{
     outline:2px solid var(--brass);
@@ -131,22 +205,29 @@
     border-color:var(--brass);
   }
   input::placeholder{ color:var(--silver); opacity:0.7; }
+  select option{ background:#1c1d22; color:var(--pearl); }
 
   button{
     font-family:'Work Sans', sans-serif;
     cursor:pointer;
     border:none;
     border-radius:var(--radius);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
   }
   .btn-primary{
-    background:var(--brass);
-    color:var(--ink);
+    background:linear-gradient(135deg,#ffe39a 0%,#ffd166 45%,#f2a93b 100%);
+    color:#172235;
     font-weight:600;
     font-size:14px;
     padding:11px 20px;
     width:100%;
+    border-radius:12px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.5) inset,
+      0 8px 18px -6px rgba(180,130,40,0.55);
   }
-  .btn-primary:hover{ background:#d6a95c; }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 1px 0 rgba(255,255,255,0.5) inset, 0 12px 22px -6px rgba(180,130,40,0.65); }
+  .btn-primary:active{ transform:translateY(0); }
   .btn-text{
     background:none;
     color:var(--silver);
@@ -159,6 +240,8 @@
 
   /* Sections */
   section{ margin-top:34px; }
+  .panel{ padding:20px 20px 6px; }
+  .panel.tight{ padding:20px; }
   .section-head{
     display:flex;
     align-items:baseline;
@@ -289,6 +372,15 @@
 </style>
 </head>
 <body>
+
+<div class="bg-scene" aria-hidden="true">
+  <div class="bg-photo"></div>
+  <div class="bg-vignette"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+</div>
+
 <div class="wrap">
 
   <header>
@@ -302,7 +394,7 @@
   </header>
 
   <!-- SETUP -->
-  <div class="setup" id="setupPanel">
+  <div class="setup glass" id="setupPanel">
     <h2>Who's on this trip?</h2>
     <p>Enter everyone's name once — you can rename people later.</p>
     <div class="name-grid" id="nameGrid"></div>
@@ -312,7 +404,7 @@
   <!-- MAIN APP -->
   <div id="app" class="hidden">
 
-    <section>
+    <section class="glass panel">
       <div class="section-head">
         <h2 class="section-title">Add an expense</h2>
         <div style="display:flex; gap:14px; align-items:baseline;">
@@ -346,7 +438,7 @@
       </div>
     </section>
 
-    <section>
+    <section class="glass panel">
       <div class="section-head">
         <h2 class="section-title">Balances</h2>
         <div class="section-meta">split evenly</div>
@@ -358,7 +450,7 @@
       </div>
     </section>
 
-    <section>
+    <section class="glass panel">
       <div class="section-head">
         <h2 class="section-title">Expenses</h2>
         <div class="section-meta" id="expenseCount">0</div>
@@ -366,7 +458,10 @@
       <div id="expensesList"></div>
     </section>
 
-    <div class="footer-note">Shared with everyone who opens this tracker — anyone can add or remove an expense.</div>
+    <div class="footer-note">
+  Shared with everyone who opens this tracker — anyone can add or remove an expense.
+  <br><span style="opacity:.72;">Background: Charminar photo via Wikimedia Commons (CC BY-SA).</span>
+</div>
   </div>
 
 </div>
