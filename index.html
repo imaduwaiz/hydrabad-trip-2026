@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyderabad · Trip Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17181c;
+    --surface:#1f2024;
+    --surface-2:#26272c;
+    --pearl:#f1eee6;
+    --pearl-dim:#c9c6bd;
+    --silver:#8d9195;
+    --hairline:#3a3b40;
+    --brass:#c99a4b;
+    --brass-dim:#8a723f;
+    --wine:#b1584f;
+    --teal:#4f9088;
+    --radius:2px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--pearl);
+    font-family:'Work Sans', sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:32px 20px 80px;
+  }
+
+  /* Header */
+  header{
+    padding-bottom:18px;
+  }
+  .eyebrow-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-optical-sizing:auto;
+    font-size:clamp(30px,7vw,40px);
+    margin:0;
+    letter-spacing:-0.01em;
+    color:var(--pearl);
+  }
+  .dates{
+    font-size:13px;
+    color:var(--silver);
+    white-space:nowrap;
+    padding-bottom:6px;
+  }
+  .arch-motif{
+    width:100%;
+    height:26px;
+    margin-top:14px;
+    display:block;
+  }
+  .arch-motif path{
+    fill:none;
+    stroke:var(--brass-dim);
+    stroke-width:1;
+  }
+
+  /* Setup panel */
+  .setup{
+    margin-top:28px;
+    border:1px solid var(--hairline);
+    padding:22px 20px;
+  }
+  .setup h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 4px;
+  }
+  .setup p{
+    color:var(--silver);
+    font-size:13px;
+    margin:0 0 18px;
+  }
+  .name-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  @media (max-width:420px){
+    .name-grid{grid-template-columns:1fr;}
+  }
+
+  label{
+    display:block;
+    font-size:11px;
+    letter-spacing:0.02em;
+    color:var(--silver);
+    margin-bottom:5px;
+  }
+  input[type=text], input[type=number], select{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    color:var(--pearl);
+    padding:10px 11px;
+    font-family:'Work Sans', sans-serif;
+    font-size:14px;
+    border-radius:var(--radius);
+  }
+  input:focus, select:focus{
+    outline:2px solid var(--brass);
+    outline-offset:1px;
+    border-color:var(--brass);
+  }
+  input::placeholder{ color:var(--silver); opacity:0.7; }
+
+  button{
+    font-family:'Work Sans', sans-serif;
+    cursor:pointer;
+    border:none;
+    border-radius:var(--radius);
+  }
+  .btn-primary{
+    background:var(--brass);
+    color:var(--ink);
+    font-weight:600;
+    font-size:14px;
+    padding:11px 20px;
+    width:100%;
+  }
+  .btn-primary:hover{ background:#d6a95c; }
+  .btn-text{
+    background:none;
+    color:var(--silver);
+    font-size:12px;
+    padding:4px 0;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .btn-text:hover{ color:var(--pearl); }
+
+  /* Sections */
+  section{ margin-top:34px; }
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  h2.section-title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:18px;
+    margin:0;
+    color:var(--pearl);
+  }
+  .section-meta{
+    font-size:12px;
+    color:var(--silver);
+  }
+
+  /* Add expense form */
+  .add-form{
+    display:grid;
+    grid-template-columns:100px 1fr;
+    gap:10px;
+  }
+  .add-form .full{ grid-column:1 / -1; }
+  .add-form .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  /* Balances (ledger rows) */
+  .balance-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 0;
+    border-bottom:1px solid var(--hairline);
+    gap:10px;
+  }
+  .balance-row:first-child{ border-top:1px solid var(--hairline); }
+  .bal-name{
+    font-weight:500;
+    color:var(--pearl);
+  }
+  .bal-paid{
+    font-size:12px;
+    color:var(--silver);
+    margin-top:2px;
+  }
+  .bal-amount{
+    font-variant-numeric:tabular-nums;
+    font-size:14px;
+    text-align:right;
+    white-space:nowrap;
+  }
+  .bal-amount.owes{ color:var(--wine); }
+  .bal-amount.owed{ color:var(--teal); }
+  .bal-amount.even{ color:var(--silver); }
+
+  .total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding-top:18px;
+    margin-top:4px;
+  }
+  .total-row .label{
+    font-family:'Fraunces', serif;
+    font-size:16px;
+    color:var(--pearl-dim);
+  }
+  .total-row .amount{
+    font-family:'Fraunces', serif;
+    font-size:28px;
+    font-variant-numeric:tabular-nums;
+    color:var(--brass);
+  }
+
+  /* Expense list */
+  .expense-row{
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    align-items:center;
+    gap:14px;
+    padding:12px 0;
+    border-bottom:1px solid var(--hairline);
+  }
+  .expense-main .desc{
+    font-size:14px;
+    color:var(--pearl);
+  }
+  .expense-main .meta{
+    font-size:12px;
+    color:var(--silver);
+    margin-top:2px;
+  }
+  .expense-amount{
+    font-variant-numeric:tabular-nums;
+    font-size:14px;
+    white-space:nowrap;
+  }
+  .expense-del{
+    background:none;
+    color:var(--silver);
+    font-size:16px;
+    line-height:1;
+    padding:4px 6px;
+  }
+  .expense-del:hover{ color:var(--wine); }
+
+  .empty{
+    color:var(--silver);
+    font-size:13px;
+    padding:18px 0;
+    border-top:1px solid var(--hairline);
+    border-bottom:1px solid var(--hairline);
+  }
+
+  .footer-note{
+    margin-top:40px;
+    font-size:11.5px;
+    color:var(--silver);
+    text-align:center;
+  }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow-row">
+      <h1>Hyderabad</h1>
+      <div class="dates">11 – 14 September</div>
+    </div>
+    <svg class="arch-motif" viewBox="0 0 600 26" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,26 L235,26 C235,10 255,2 300,2 C345,2 365,10 365,26 L600,26"/>
+    </svg>
+  </header>
+
+  <!-- SETUP -->
+  <div class="setup" id="setupPanel">
+    <h2>Who's on this trip?</h2>
+    <p>Enter everyone's name once — you can rename people later.</p>
+    <div class="name-grid" id="nameGrid"></div>
+    <button class="btn-primary" id="saveNamesBtn">Start tracking</button>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="hidden">
+
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">Add an expense</h2>
+        <button class="btn-text" id="editNamesBtn">edit names</button>
+      </div>
+      <div class="add-form">
+        <div>
+          <label for="amtInput">Amount (₹)</label>
+          <input type="number" id="amtInput" placeholder="0" min="0" step="1">
+        </div>
+        <div>
+          <label for="descInput">What was it for</label>
+          <input type="text" id="descInput" placeholder="Biryani at Bawarchi">
+        </div>
+        <div class="full row2">
+          <div>
+            <label for="whoSelect">Paid by</label>
+            <select id="whoSelect"></select>
+          </div>
+          <div>
+            <label for="dateInput">Date</label>
+            <input type="text" id="dateInput" placeholder="11 Sept" maxlength="12">
+          </div>
+        </div>
+        <div class="full">
+          <button class="btn-primary" id="addBtn">Add expense</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">Balances</h2>
+        <div class="section-meta">split evenly</div>
+      </div>
+      <div id="balancesList"></div>
+      <div class="total-row">
+        <div class="label">Trip total</div>
+        <div class="amount" id="tripTotal">₹0</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">Expenses</h2>
+        <div class="section-meta" id="expenseCount">0</div>
+      </div>
+      <div id="expensesList"></div>
+    </section>
+
+    <div class="footer-note">Shared with everyone who opens this tracker — anyone can add or remove an expense.</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'hyd-trip-2026-09';
+  let state = { names: [], expenses: [] };
+
+  const setupPanel = document.getElementById('setupPanel');
+  const app = document.getElementById('app');
+  const nameGrid = document.getElementById('nameGrid');
+  const saveNamesBtn = document.getElementById('saveNamesBtn');
+  const editNamesBtn = document.getElementById('editNamesBtn');
+  const whoSelect = document.getElementById('whoSelect');
+  const amtInput = document.getElementById('amtInput');
+  const descInput = document.getElementById('descInput');
+  const dateInput = document.getElementById('dateInput');
+  const addBtn = document.getElementById('addBtn');
+  const balancesList = document.getElementById('balancesList');
+  const tripTotalEl = document.getElementById('tripTotal');
+  const expensesList = document.getElementById('expensesList');
+  const expenseCount = document.getElementById('expenseCount');
+
+  function fmt(n){
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+
+  function todayLabel(){
+    const d = new Date();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return d.getDate() + ' ' + months[d.getMonth()];
+  }
+
+  function buildNameInputs(){
+    nameGrid.innerHTML = '';
+    for(let i=0;i<4;i++){
+      const wrap = document.createElement('div');
+      const lbl = document.createElement('label');
+      lbl.textContent = 'Person ' + (i+1);
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.placeholder = 'Name';
+      inp.dataset.idx = i;
+      inp.value = state.names[i] || '';
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      nameGrid.appendChild(wrap);
+    }
+  }
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, true);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state.names = parsed.names || [];
+        state.expenses = parsed.expenses || [];
+      }
+    }catch(e){
+      // no existing data yet
+    }
+  }
+
+  async function saveState(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    }catch(e){
+      console.error('Could not save', e);
+    }
+  }
+
+  function renderWhoSelect(){
+    whoSelect.innerHTML = '';
+    state.names.forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      whoSelect.appendChild(opt);
+    });
+  }
+
+  function computeBalances(){
+    const paidByPerson = {};
+    state.names.forEach(n=> paidByPerson[n] = 0);
+    let total = 0;
+    state.expenses.forEach(e=>{
+      paidByPerson[e.who] = (paidByPerson[e.who] || 0) + e.amount;
+      total += e.amount;
+    });
+    const n = state.names.length || 1;
+    const fairShare = total / n;
+    return { paidByPerson, total, fairShare };
+  }
+
+  function render(){
+    renderWhoSelect();
+    const { paidByPerson, total, fairShare } = computeBalances();
+
+    balancesList.innerHTML = '';
+    if(state.expenses.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'No expenses logged yet — balances will appear once you add one.';
+      balancesList.appendChild(empty);
+    } else {
+      state.names.forEach(n=>{
+        const paid = paidByPerson[n] || 0;
+        const diff = paid - fairShare;
+        const row = document.createElement('div');
+        row.className = 'balance-row';
+
+        const left = document.createElement('div');
+        const nameEl = document.createElement('div');
+        nameEl.className = 'bal-name';
+        nameEl.textContent = n;
+        const paidEl = document.createElement('div');
+        paidEl.className = 'bal-paid';
+        paidEl.textContent = fmt(paid) + ' paid in';
+        left.appendChild(nameEl);
+        left.appendChild(paidEl);
+
+        const right = document.createElement('div');
+        right.className = 'bal-amount';
+        if(Math.abs(diff) < 1){
+          right.classList.add('even');
+          right.textContent = 'settled';
+        } else if(diff > 0){
+          right.classList.add('owed');
+          right.textContent = 'is owed ' + fmt(diff);
+        } else {
+          right.classList.add('owes');
+          right.textContent = 'owes ' + fmt(-diff);
+        }
+
+        row.appendChild(left);
+        row.appendChild(right);
+        balancesList.appendChild(row);
+      });
+    }
+    tripTotalEl.textContent = fmt(total);
+
+    expensesList.innerHTML = '';
+    expenseCount.textContent = state.expenses.length;
+    if(state.expenses.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Nothing logged yet. Add your first expense above.';
+      expensesList.appendChild(empty);
+    } else {
+      [...state.expenses].reverse().forEach(e=>{
+        const row = document.createElement('div');
+        row.className = 'expense-row';
+
+        const main = document.createElement('div');
+        main.className = 'expense-main';
+        const desc = document.createElement('div');
+        desc.className = 'desc';
+        desc.textContent = e.desc || '(no description)';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = (e.date ? e.date + ' · ' : '') + e.who;
+        main.appendChild(desc);
+        main.appendChild(meta);
+
+        const amt = document.createElement('div');
+        amt.className = 'expense-amount';
+        amt.textContent = fmt(e.amount);
+
+        const del = document.createElement('button');
+        del.className = 'expense-del';
+        del.textContent = '✕';
+        del.title = 'Delete this expense';
+        del.addEventListener('click', ()=> deleteExpense(e.id));
+
+        row.appendChild(main);
+        row.appendChild(amt);
+        row.appendChild(del);
+        expensesList.appendChild(row);
+      });
+    }
+  }
+
+  async function deleteExpense(id){
+    state.expenses = state.expenses.filter(e=> e.id !== id);
+    await saveState();
+    render();
+  }
+
+  saveNamesBtn.addEventListener('click', async ()=>{
+    const inputs = nameGrid.querySelectorAll('input');
+    const names = Array.from(inputs).map(i=> i.value.trim()).filter(Boolean);
+    if(names.length < 2){
+      alert('Enter at least 2 names.');
+      return;
+    }
+    state.names = names;
+    await saveState();
+    setupPanel.classList.add('hidden');
+    app.classList.remove('hidden');
+    render();
+  });
+
+  editNamesBtn.addEventListener('click', ()=>{
+    buildNameInputs();
+    app.classList.add('hidden');
+    setupPanel.classList.remove('hidden');
+  });
+
+  addBtn.addEventListener('click', async ()=>{
+    const amount = parseFloat(amtInput.value);
+    if(!amount || amount <= 0){
+      alert('Enter a valid amount.');
+      return;
+    }
+    if(!whoSelect.value){
+      alert('Add names first.');
+      return;
+    }
+    const expense = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      amount,
+      who: whoSelect.value,
+      desc: descInput.value.trim(),
+      date: dateInput.value.trim() || todayLabel()
+    };
+    state.expenses.push(expense);
+    await saveState();
+    amtInput.value = '';
+    descInput.value = '';
+    dateInput.value = '';
+    render();
+    amtInput.focus();
+  });
+
+  amtInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') descInput.focus(); });
+  descInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
+
+  (async function init(){
+    await loadState();
+    dateInput.value = '';
+    dateInput.placeholder = todayLabel();
+    if(state.names.length >= 2){
+      setupPanel.classList.add('hidden');
+      app.classList.remove('hidden');
+      render();
+    } else {
+      buildNameInputs();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
