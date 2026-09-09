@@ -315,8 +315,12 @@
     <section>
       <div class="section-head">
         <h2 class="section-title">Add an expense</h2>
-        <button class="btn-text" id="editNamesBtn">edit names</button>
+        <div style="display:flex; gap:14px; align-items:baseline;">
+          <button class="btn-text" id="refreshBtn">refresh</button>
+          <button class="btn-text" id="editNamesBtn">edit names</button>
+        </div>
       </div>
+      <div class="section-meta" id="syncNote" style="margin:-8px 0 14px;"></div>
       <div class="add-form">
         <div>
           <label for="amtInput">Amount (₹)</label>
@@ -371,12 +375,20 @@
 (function(){
   const STORAGE_KEY = 'hyd-trip-2026-09';
   let state = { names: [], expenses: [] };
+  let pollingStarted = false;
+  function startPolling(){
+    if(pollingStarted) return;
+    pollingStarted = true;
+    setInterval(pullLatest, 8000);
+  }
 
   const setupPanel = document.getElementById('setupPanel');
   const app = document.getElementById('app');
   const nameGrid = document.getElementById('nameGrid');
   const saveNamesBtn = document.getElementById('saveNamesBtn');
   const editNamesBtn = document.getElementById('editNamesBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const syncNote = document.getElementById('syncNote');
   const whoSelect = document.getElementById('whoSelect');
   const amtInput = document.getElementById('amtInput');
   const descInput = document.getElementById('descInput');
@@ -547,9 +559,25 @@
   }
 
   async function deleteExpense(id){
+    await loadState();
     state.expenses = state.expenses.filter(e=> e.id !== id);
     await saveState();
     render();
+    noteSynced();
+  }
+
+  function noteSynced(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    syncNote.textContent = 'synced ' + hh + ':' + mm;
+  }
+
+  async function pullLatest(){
+    await loadState();
+    renderWhoSelect();
+    render();
+    noteSynced();
   }
 
   saveNamesBtn.addEventListener('click', async ()=>{
@@ -564,6 +592,8 @@
     setupPanel.classList.add('hidden');
     app.classList.remove('hidden');
     render();
+    noteSynced();
+    startPolling();
   });
 
   editNamesBtn.addEventListener('click', ()=>{
@@ -582,12 +612,13 @@
       alert('Add names first.');
       return;
     }
+    const who = whoSelect.value;
+    const desc = descInput.value.trim();
+    const date = dateInput.value.trim() || todayLabel();
+    await loadState();
     const expense = {
       id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
-      amount,
-      who: whoSelect.value,
-      desc: descInput.value.trim(),
-      date: dateInput.value.trim() || todayLabel()
+      amount, who, desc, date
     };
     state.expenses.push(expense);
     await saveState();
@@ -595,8 +626,11 @@
     descInput.value = '';
     dateInput.value = '';
     render();
+    noteSynced();
     amtInput.focus();
   });
+
+  refreshBtn.addEventListener('click', pullLatest);
 
   amtInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') descInput.focus(); });
   descInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
@@ -609,6 +643,8 @@
       setupPanel.classList.add('hidden');
       app.classList.remove('hidden');
       render();
+      noteSynced();
+      startPolling();
     } else {
       buildNameInputs();
     }
