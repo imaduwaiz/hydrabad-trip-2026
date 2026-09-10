@@ -461,21 +461,53 @@
     <div class="footer-note">
   Shared with everyone who opens this tracker — anyone can add or remove an expense.
   <br><span style="opacity:.72;">Background: Charminar photo via Wikimedia Commons (CC BY-SA).</span>
+  <br><span style="opacity:.62;">Data is stored in Firebase Realtime Database when the Firebase config is connected.</span>
 </div>
   </div>
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
+// ================================================================
+// SHARED BACKEND SETUP
+// 1) Create a Firebase project at https://console.firebase.google.com/
+// 2) Add a Web App and copy its Firebase config below.
+// 3) Create Realtime Database and use these rules for a private trip
+//    where anyone with the link can read/write:
+//    { "rules": { ".read": true, ".write": true } }
+// 4) Replace the placeholder values below, then upload this HTML.
+// Firebase config is safe to expose in browser code; database RULES
+// are what control access.
+// ================================================================
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const FIREBASE_READY = !Object.values(FIREBASE_CONFIG).some(v => String(v).includes('YOUR_'));
+let sharedDB = null;
+if (FIREBASE_READY) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    sharedDB = firebase.database();
+  } catch (err) {
+    console.error('Firebase initialization failed:', err);
+  }
+}
+
 (function(){
   const STORAGE_KEY = 'hyd-trip-2026-09';
+  const DB_PATH = 'hyderabad-trip-2026-09';
   let state = { names: [], expenses: [] };
-  let pollingStarted = false;
-  function startPolling(){
-    if(pollingStarted) return;
-    pollingStarted = true;
-    setInterval(pullLatest, 8000);
-  }
+  let firebaseListenerAttached = false;
+  let usingLocalFallback = false;
 
   const setupPanel = document.getElementById('setupPanel');
   const app = document.getElementById('app');
@@ -493,6 +525,10 @@
   const tripTotalEl = document.getElementById('tripTotal');
   const expensesList = document.getElementById('expensesList');
   const expenseCount = document.getElementById('expenseCount');
+
+  if(!sharedDB){
+    syncNote.textContent = 'Firebase not connected — local only';
+  }
 
   function fmt(n){
     return '₹' + Math.round(n).toLocaleString('en-IN');
@@ -521,25 +557,69 @@
     }
   }
 
+  function normalizeState(data){
+    const safe = data || {};
+    state.names = Array.isArray(safe.names) ? safe.names : [];
+    if(Array.isArray(safe.expenses)){
+      state.expenses = safe.expenses;
+    } else if(safe.expenses && typeof safe.expenses === 'object'){
+      state.expenses = Object.values(safe.expenses);
+    } else {
+      state.expenses = [];
+    }
+  }
+
   async function loadState(){
+    if(sharedDB){
+      const snap = await sharedDB.ref(DB_PATH).once('value');
+      normalizeState(snap.val());
+      usingLocalFallback = false;
+      return;
+    }
+
+    // Local fallback is only used until Firebase is configured.
+    usingLocalFallback = true;
     try{
-      const res = await window.storage.get(STORAGE_KEY, true);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
-        state.names = parsed.names || [];
-        state.expenses = parsed.expenses || [];
-      }
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) normalizeState(JSON.parse(raw));
     }catch(e){
-      // no existing data yet
+      console.error('Could not load local data', e);
     }
   }
 
   async function saveState(){
-    try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
-    }catch(e){
-      console.error('Could not save', e);
+    if(sharedDB){
+      await sharedDB.ref(DB_PATH).set({
+        names: state.names,
+        expenses: state.expenses.reduce((obj, e) => { obj[e.id] = e; return obj; }, {})
+      });
+      usingLocalFallback = false;
+      return;
     }
+
+    usingLocalFallback = true;
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      console.error('Could not save local data', e);
+    }
+  }
+
+  function attachRealtimeListener(){
+    if(!sharedDB || firebaseListenerAttached) return;
+    firebaseListenerAttached = true;
+    sharedDB.ref(DB_PATH).on('value', snap => {
+      normalizeState(snap.val());
+      if(state.names.length >= 2){
+        setupPanel.classList.add('hidden');
+        app.classList.remove('hidden');
+      }
+      render();
+      noteSynced();
+    }, err => {
+      console.error('Realtime sync failed:', err);
+      syncNote.textContent = 'sync error';
+    });
   }
 
   function renderWhoSelect(){
@@ -654,11 +734,19 @@
   }
 
   async function deleteExpense(id){
-    await loadState();
-    state.expenses = state.expenses.filter(e=> e.id !== id);
-    await saveState();
-    render();
-    noteSynced();
+    try{
+      if(sharedDB){
+        await sharedDB.ref(DB_PATH + '/expenses/' + id).remove();
+      } else {
+        state.expenses = state.expenses.filter(e=> e.id !== id);
+        await saveState();
+        render();
+      }
+      noteSynced();
+    }catch(e){
+      console.error('Could not delete expense', e);
+      alert('Could not delete this expense. Please try again.');
+    }
   }
 
   function noteSynced(){
@@ -683,12 +771,16 @@
       return;
     }
     state.names = names;
-    await saveState();
+    if(sharedDB){
+      await sharedDB.ref(DB_PATH + '/names').set(names);
+    } else {
+      await saveState();
+    }
     setupPanel.classList.add('hidden');
     app.classList.remove('hidden');
     render();
     noteSynced();
-    startPolling();
+    attachRealtimeListener();
   });
 
   editNamesBtn.addEventListener('click', ()=>{
@@ -710,13 +802,16 @@
     const who = whoSelect.value;
     const desc = descInput.value.trim();
     const date = dateInput.value.trim() || todayLabel();
-    await loadState();
     const expense = {
       id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
       amount, who, desc, date
     };
-    state.expenses.push(expense);
-    await saveState();
+    if(sharedDB){
+      await sharedDB.ref(DB_PATH + '/expenses/' + expense.id).set(expense);
+    } else {
+      state.expenses.push(expense);
+      await saveState();
+    }
     amtInput.value = '';
     descInput.value = '';
     dateInput.value = '';
@@ -739,7 +834,7 @@
       app.classList.remove('hidden');
       render();
       noteSynced();
-      startPolling();
+      attachRealtimeListener();
     } else {
       buildNameInputs();
     }
